@@ -32,8 +32,8 @@ namespace sevendays
         public const string pluginAuthor = "1010101110";
         public const string pluginName = "poilevel";
         public const string pluginID = pluginAuthor + "." + pluginName;
-        public const string pluginVersion = "0.0.1";
-        public const string pluginBuildDate = "2025-05-09";
+        public const string pluginVersion = "0.0.2";
+        public const string pluginBuildDate = "2025-05-29";
         public static PoiLevelMod mod;
 
 
@@ -718,6 +718,13 @@ namespace sevendays
                                     var name = zdol.GetString("7d2d_name");
                                     if (diff > 0)
                                     {
+                                        //do not do tombstones
+                                        var tomb = __instance.gameObject.GetComponent<TombStone>();
+                                        if (tomb)
+                                        {
+                                            return;
+                                        }
+
                                         //check to see if its been set before
                                         var zdoc = __instance.m_nview.GetZDO();
                                         if (zdoc != null)
