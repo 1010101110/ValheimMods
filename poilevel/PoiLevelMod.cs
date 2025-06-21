@@ -32,8 +32,8 @@ namespace sevendays
         public const string pluginAuthor = "1010101110";
         public const string pluginName = "poilevel";
         public const string pluginID = pluginAuthor + "." + pluginName;
-        public const string pluginVersion = "0.0.2";
-        public const string pluginBuildDate = "2025-05-29";
+        public const string pluginVersion = "0.0.3";
+        public const string pluginBuildDate = "2025-06-21";
         public static PoiLevelMod mod;
 
 
@@ -696,6 +696,11 @@ namespace sevendays
         [HarmonyPatch(typeof(Container), nameof(Container.CheckForChanges))]
         private static class containerawake
         {
+            private static List<string> chests = new List<string>{ 
+                "loot_chest_",
+                "TreasureChest_",
+                "stonechest"
+            };
             private static void Postfix(Container __instance)
             {
                 // is it valid? 
@@ -722,6 +727,14 @@ namespace sevendays
                                         var tomb = __instance.gameObject.GetComponent<TombStone>();
                                         if (tomb)
                                         {
+                                            return;
+                                        }
+
+                                        //do not do anything thats not a loot chest
+                                        var prefname = __instance.gameObject.name;
+                                        if(!chests.Any(c => prefname.StartsWith(c, StringComparison.OrdinalIgnoreCase)))
+                                        {
+                                            //ZLog.LogInfo("skipping container " + prefname);
                                             return;
                                         }
 
