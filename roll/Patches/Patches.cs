@@ -1,6 +1,8 @@
 ﻿using HarmonyLib;
+using Splatform;
 using System;
 using UnityEngine;
+using UnityEngine.Android;
 
 namespace tripping.Patches
 {
@@ -69,41 +71,111 @@ namespace tripping.Patches
                 return true;
             }
         }
-
-        [HarmonyPatch(typeof(Chat), "OnNewChatMessage")]
-        private class addstringpatch
+        
+        [HarmonyPatch(typeof(Chat), "AddInworldText")]
+        private class noinworldtext
         {
-            private static bool Prefix(
-                GameObject go,
-                long senderID,
-                Vector3 pos,
-                Talker.Type type,
-                UserInfo user,
-                string text,
-                string senderNetworkUserId,
-                ref Chat __instance
-            )
+            private static bool Prefix(GameObject go, long senderID, Vector3 position, Talker.Type type, UserInfo user, string text)
             {
-                bool result;
+                bool ret = true;
                 if (text.Contains("{|roll|}"))
                 {
-                    string text2 = text.Replace("{|roll|}", "");
-                    __instance.AddString(string.Concat(new string[]
-                    {
-                        "<color=#607D8B>",
-                        user.GetDisplayName(senderNetworkUserId),
-                        " ",
-                        text2,
-                        "</color>"
-                    }));
-                    result = false;
+                    ret = false;
                 }
-                else
-                {
-                    result = true;
-                }
-                return result;
+                return ret;
             }
         }
+
+        [HarmonyPatch(typeof(Terminal), "AddString", new Type[] { typeof(PlatformUserID), typeof(string), typeof(Talker.Type), typeof(bool) })]
+        private class rollstring
+        {
+            private static bool Prefix(PlatformUserID user, string text, Talker.Type type, bool timestamp, ref Terminal __instance)
+            {
+                bool ret = true;
+                if (text.Contains("{|roll|}"))
+                {
+                    ZLog.LogError(user);
+                    ZLog.LogError(text);
+
+                    //get username
+                    if (ZNet.TryGetPlayerByPlatformUserID(user, out var playerInfo))
+                    {
+                        string text2 = text.Replace("{|roll|}", "");
+                        __instance.AddString(string.Concat(new string[]
+                        {
+                            "<color=#607D8B>",
+                            playerInfo.m_name,
+                            " ",
+                            text2,
+                            "</color>"
+                        }));
+
+                        ret = false;
+                    }
+                }
+                return ret;
+            }
+        }
+
+
+        //[HarmonyPatch(typeof(Chat), "OnNewChatMessage")]
+        //private class addstringpatch
+        //{
+        //    private static bool Prefix(
+        //        GameObject go, long senderID, Vector3 pos, Talker.Type type, UserInfo sender, ref string text, ref Chat __instance
+        //    )
+        //    {
+        //        //RelationsManager.CheckPermissionAsync(sender.UserId, Permission.CommunicateWithUsingText, isSender: false, delegate (RelationsManagerPermissionResult result)
+        //        //{
+        //        //    if (result.IsGranted())
+        //        //    {
+        //        //        if (__instance == null)
+        //        //        {
+        //        //            Debug.LogError("Chat has already been destroyed!");
+        //        //        }
+        //        //        else
+        //        //        {
+        //        //            text = text.Replace('<', ' ');
+        //        //            text = text.Replace('>', ' ');
+        //        //            if (result == RelationsManagerPermissionResult.GrantedRequiresFiltering)
+        //        //            {
+        //        //                CensorShittyWords.Filter(text, out text);
+        //        //            }
+        //        //            if (type != Talker.Type.Ping)
+        //        //            {
+        //        //                m_hideTimer = 0f;
+        //        //                AddString(sender.UserId, text, type);
+        //        //            }
+        //        //            if (!Minimap.instance || !Player.m_localPlayer || Minimap.instance.m_mode != 0 || !(Vector3.Distance(Player.m_localPlayer.transform.position, pos) > Minimap.instance.m_nomapPingDistance))
+        //        //            {
+        //        //                AddInworldText(go, senderID, pos, type, sender, text);
+        //        //            }
+        //        //        }
+        //        //    }
+        //        //});
+
+
+        //        if (text.Contains("{|roll|}"))
+        //        {
+        //            sender.GetDisplayName();
+        //            string text2 = text.Replace("{|roll|}", "");
+        //            __instance.AddString(string.Concat(new string[]
+        //            {
+        //                "<color=#607D8B>",
+        //                sender.GetDisplayName(),
+        //                " ",
+        //                text2,
+        //                "</color>"
+        //            }));
+        //            result = false;
+        //        }
+        //        else
+        //        {
+        //            result = true;
+        //        }
+        //        return result;
+        //    }
+        //}
+
     }
 }

@@ -1,5 +1,7 @@
 ﻿using HarmonyLib;
+using Splatform;
 using UnityEngine;
+using System;
 
 namespace tripping.Patches
 {
@@ -38,40 +40,48 @@ namespace tripping.Patches
             }
         }
 
-        [HarmonyPatch(typeof(Chat), "OnNewChatMessage")]
-        private class addstringpatch
+        [HarmonyPatch(typeof(Chat), "AddInworldText")]
+        private class noinworldtext
         {
-            private static bool Prefix(
-                GameObject go,
-                long senderID,
-                Vector3 pos,
-                Talker.Type type,
-                UserInfo user,
-                string text,
-                string senderNetworkUserId,
-                ref Chat __instance
-            )
+            private static bool Prefix(GameObject go, long senderID, Vector3 position, Talker.Type type, UserInfo user, string text)
             {
-                bool flag = text.Contains("{|me|}");
-                bool result;
-                if (flag)
+                bool ret = true;
+                if (text.Contains("{|me|}"))
                 {
-                    string text2 = text.Replace("{|me|}", "");
-                    __instance.AddString(string.Concat(new string[]
+                    ret = false;
+                }
+                return ret;
+            }
+        }
+
+        [HarmonyPatch(typeof(Terminal), "AddString", new Type[] { typeof(PlatformUserID), typeof(string), typeof(Talker.Type), typeof(bool) })]
+        private class mestring
+        {
+            private static bool Prefix(PlatformUserID user, string text, Talker.Type type, bool timestamp, ref Terminal __instance)
+            {
+                bool ret = true;
+                if (text.Contains("{|me|}"))
+                {
+                    ZLog.LogError(user);
+                    ZLog.LogError(text);
+
+                    //get username
+                    if (ZNet.TryGetPlayerByPlatformUserID(user, out var playerInfo))
                     {
-                        "<color=#607D8B>",
-                        user.GetDisplayName(senderNetworkUserId),
-                        " ",
-                        text2,
-                        "</color>"
-                    }));
-                    result = false;
+                        string text2 = text.Replace("{|me|}", "");
+                        __instance.AddString(string.Concat(new string[]
+                        {
+                            "<color=#607D8B>",
+                            playerInfo.m_name,
+                            " ",
+                            text2,
+                            "</color>"
+                        }));
+
+                        ret = false;
+                    }
                 }
-                else
-                {
-                    result = true;
-                }
-                return result;
+                return ret;
             }
         }
     }
